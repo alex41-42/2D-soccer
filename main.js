@@ -285,15 +285,8 @@ function gameLoop() {
     );
 
     if (state === "start") {
-        fillRect(-50, SCREEN_HEIGHT / 3, SCREEN_WIDTH + 100, SCREEN_HEIGHT / 3, [255, 255, 255]);
-        drawRect(-50, SCREEN_HEIGHT / 3, SCREEN_WIDTH + 100, SCREEN_HEIGHT / 3, textColor, 1, lineWidth);
-        drawText(score1 + "/" + score2, SCREEN_WIDTH / 2 - 30, SCREEN_HEIGHT / 2 + 50, 30, textColor);
-        drawText("Goooaaaallll!!!!", SCREEN_WIDTH / 2 - 120, SCREEN_HEIGHT / 2 - 15, 30, textColor);
+        drawMenu();
         objects = ResetGame();
-
-        if (keys["Enter"]) {
-            state = "play";
-        }
     }
 
     if (state === "play") {
@@ -418,4 +411,5 @@ function gameLoop() {
     }
 }
 
+setupMenu();
 gameLoop();

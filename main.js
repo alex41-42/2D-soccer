@@ -75,9 +75,6 @@ class Player {
         this.type = "player";
         this.y = Y;
         this.x = X;
-        this.holdingBall = false;
-        this.aimDx = 1;
-        this.aimDy = 0;
         this.size = 20;
         this.mass = 100;
         this.vx = 0;
@@ -87,19 +84,15 @@ class Player {
     }
 
     draw() {
-        const v = sqrt(this.vx * this.vx + this.vy * this.vy) || 1;
+        const inv_v = 1/(sqrt(this.vx * this.vx + this.vy * this.vy) || 1);
 
         drawCircle(this.x, this.y, this.size, this.color, 1, 2);
         ctx.strokeStyle = RGBtoHEX(this.color);
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(this.x, this.y);
-        ctx.lineTo(this.x + (this.vx / v) * this.size, this.y + (this.vy / v) * this.size);
+        ctx.lineTo(this.x + (this.vx * inv_v) * this.size, this.y + (this.vy * inv_v) * this.size);
         ctx.stroke();
-
-        if (this.holdingBall) {
-            drawCircle(this.x, this.y, this.size + 5, this.color, 0.4, 3);
-        }
     }
 
     move() {
@@ -108,18 +101,11 @@ class Player {
         this.vx *= friction / 1.075;
         this.vy *= friction / 1.075;
 
-        for (let i = 0; i < this.key.length - 1; i++) {
+        for (let i = 0; i < this.key.length; i++) {
             if (keys[this.key[i][0]]) {
                 this.vx += this.key[i][1];
                 this.vy += this.key[i][2];
             }
-        }
-
-        const v = sqrt(this.vx * this.vx + this.vy * this.vy);
-
-        if (v > 0.5) {
-            this.aimDx = this.vx / v;
-            this.aimDy = this.vy / v;
         }
 
         if (this.x < this.size) {
@@ -142,12 +128,6 @@ class Player {
             this.y = SCREEN_HEIGHT - this.size;
         }
     }
-
-    canPickup(ball) {
-        const dx = ball.x - this.x;
-        const dy = ball.y - this.y;
-        return sqrt(dx * dx + dy * dy) < this.size + ball.size + 5;
-    }
 }
 
 class Ball {
@@ -161,7 +141,6 @@ class Ball {
         this.vy = 0;//(Math.random() - 0.5) * 15;
         this.color = COLOR;
         this.color2 = [0, 0, 0];
-        this.heldBy = null;
     }
 
     reset() {
@@ -169,7 +148,6 @@ class Ball {
         this.y = SCREEN_HEIGHT / 2;
         this.vx = 0;//(Math.random() - 0.5) * 15;
         this.vy = 0;//(Math.random() - 0.5) * 15;
-        this.heldBy = null;
     }
 
     draw() {
@@ -178,15 +156,6 @@ class Ball {
     }
 
     move() {
-        if (this.heldBy) {
-            const p = this.heldBy;
-            this.x = p.x + p.aimDx * (p.size + this.size);
-            this.y = p.y + p.aimDy * (p.size + this.size);
-            this.vx = p.vx;
-            this.vy = p.vy;
-            return;
-        }
-
         this.x += this.vx;
         this.y += this.vy;
         this.vx *= friction;
@@ -228,18 +197,13 @@ function ResetGame() {
         ["d", 1, 0],
         ["s", 0, 1],
         ["z", 0, -1],
-        " ",
     ]);
     const p2 = new Player(SCREEN_WIDTH - goalWidth * 2, SCREEN_HEIGHT / 2, [0, 0, 255], [
         ["ArrowLeft", -1, 0],
         ["ArrowRight", 1, 0],
         ["ArrowDown", 0, 1],
         ["ArrowUp", 0, -1],
-        "Shift",
     ]);
-
-    p1.aimDx = 1;
-    p2.aimDx = -1;
 
     const objects = [p1, p2];
     objects.push(new Ball(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, [255, 255, 255]));
@@ -321,27 +285,12 @@ function gameLoop() {
                     o1.vy = ny * V * (o2.mass / Mass);
                     o2.vx = -nx * V * (o1.mass / Mass);
                     o2.vy = -ny * V * (o1.mass / Mass);
-
-                    // Tackle : si l'un des deux tient la balle, elle est éjectée
-                    for (const b of balls) {
-                        if (b.heldBy === o1 || b.heldBy === o2) {
-                            const carrier = b.heldBy;
-                            const tackler = b.heldBy === o1 ? o2 : o1;
-                            // la balle part dans la direction du tackle (vitesse du tackler + rebond)
-                            b.vx = tackler.vx * 3 + carrier.vx;
-                            b.vy = tackler.vy * 3 + carrier.vy;
-                            b.heldBy = null;
-                            carrier.holdingBall = false;
-                        }
-                    }
                 }
             }
         }
 
         // Balle libre : collision physique avec les joueurs
         for (const b of balls) {
-            if (b.heldBy) continue;
-
             for (const p of players) {
                 const Size = p.size + b.size;
                 const xd = b.x - p.x;
@@ -362,28 +311,6 @@ function gameLoop() {
                     p.vy = -ny * V * (b.mass / Mass);
                 }
             }
-        }
-
-        // Holding / tir
-        for (const p of players) {
-            const controlKey = p.key[p.key.length - 1];
-            const pressing = keys[controlKey];
-
-            for (const b of balls) {
-                if (pressing) {
-                    if (!b.heldBy && p.canPickup(b)) {
-                        b.heldBy = p;
-                        p.holdingBall = true;
-                    }
-                } else if (b.heldBy === p) {
-                    b.vx = p.aimDx * 10 + p.vx;
-                    b.vy = p.aimDy * 10 + p.vy;
-                    b.heldBy = null;
-                    p.holdingBall = false;
-                }
-            }
-
-            p.holdingBall = balls.some((b) => b.heldBy === p);
         }
 
         // Déplacement

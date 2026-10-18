@@ -238,15 +238,7 @@ function gameLoop() {
     drawRect(goal1[0], goal1[1], goal1[2], goal1[3], [255, 0, 0], 1, lineWidth);
     drawRect(goal2[0], goal2[1], goal2[2], goal2[3], [0, 0, 255], 1, lineWidth);
     drawRect(0, (SCREEN_HEIGHT - goalHeight * 1.5) / 2, goalWidth * 1.5, goalHeight * 1.5, lineColor, 1, lineWidth);
-    drawRect(
-        SCREEN_WIDTH - goalWidth * 1.5,
-        (SCREEN_HEIGHT - goalHeight * 1.5) / 2,
-        goalWidth * 1.5,
-        goalHeight * 1.5,
-        lineColor,
-        1,
-        lineWidth,
-    );
+    drawRect(SCREEN_WIDTH - goalWidth * 1.5, (SCREEN_HEIGHT - goalHeight * 1.5) / 2, goalWidth * 1.5, goalHeight * 1.5, lineColor, 1, lineWidth);
 
     if (state === "start") {
         drawMenu();
@@ -278,8 +270,14 @@ function gameLoop() {
                     const V1 = sqrt(o1.vx * o1.vx + o1.vy * o1.vy);
                     const V2 = sqrt(o2.vx * o2.vx + o2.vy * o2.vy);
                     const V = V1 + V2;
-                    const nx = xd / dist;
-                    const ny = yd / dist;
+                    const nx = dist === 0 ? 1 : xd / dist;
+                    const ny = dist === 0 ? 0 : yd / dist;
+                    const overlap = Size - dist;
+
+                    o1.x += nx * overlap * (o2.mass / Mass);
+                    o1.y += ny * overlap * (o2.mass / Mass);
+                    o2.x -= nx * overlap * (o1.mass / Mass);
+                    o2.y -= ny * overlap * (o1.mass / Mass);
 
                     o1.vx = nx * V * (o2.mass / Mass);
                     o1.vy = ny * V * (o2.mass / Mass);
@@ -302,8 +300,14 @@ function gameLoop() {
                     const V1 = sqrt(b.vx * b.vx + b.vy * b.vy);
                     const V2 = sqrt(p.vx * p.vx + p.vy * p.vy);
                     const V = V1 + V2;
-                    const nx = xd / dist;
-                    const ny = yd / dist;
+                    const nx = dist === 0 ? 1 : xd / dist;
+                    const ny = dist === 0 ? 0 : yd / dist;
+                    const overlap = Size - dist;
+
+                    b.x += nx * overlap * (p.mass / Mass);
+                    b.y += ny * overlap * (p.mass / Mass);
+                    p.x -= nx * overlap * (b.mass / Mass);
+                    p.y -= ny * overlap * (b.mass / Mass);
 
                     b.vx = nx * V * (p.mass / Mass);
                     b.vy = ny * V * (p.mass / Mass);

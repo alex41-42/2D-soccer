@@ -3,9 +3,11 @@ const ctx = canvas.getContext("2d");
 const PI = Math.PI;
 const sqrt = Math.sqrt;
 
+// Global variables for screen dimensions
 let SCREEN_WIDTH;
 let SCREEN_HEIGHT;
 
+// Cache for color conversions to improve performance
 const colorCache = new Map();
 
 function RGBtoHEX(col, A = 1) {
@@ -18,6 +20,7 @@ function RGBtoHEX(col, A = 1) {
     return colorCache.get(key);
 }
 
+// Drawing functions
 function fillRect(x, y, w, h, color, A = 1) {
     ctx.fillStyle = RGBtoHEX(color, A);
     ctx.fillRect(x, y, w, h);
@@ -50,6 +53,7 @@ function drawText(text, x, y, s, color, A = 1) {
     ctx.fillText(text, x, y);
 }
 
+// Function to resize the canvas to fit the window
 function resizeCanvas() {
     SCREEN_WIDTH = window.innerWidth;
     SCREEN_HEIGHT = window.innerHeight;
@@ -70,13 +74,14 @@ document.addEventListener("keyup", (e) => {
     keys[e.key] = false;
 });
 
+// Player class representing a player in the game
 class Player {
     constructor(X, Y, COLOR, KEY) {
         this.type = "player";
         this.y = Y;
         this.x = X;
         this.size = 20;
-        this.mass = 100;
+        this.mass = 10;
         this.vx = 0;
         this.vy = 0;
         this.color = COLOR;
@@ -107,35 +112,37 @@ class Player {
                 this.vy += this.key[i][2];
             }
         }
-
+    }
+    edgeCollision(e = 0.5) {
         if (this.x < this.size) {
-            this.vx *= -1;
+            this.vx *= -e;
             this.x = this.size;
         }
 
         if (this.y < this.size) {
-            this.vy *= -1;
+            this.vy *= -e;
             this.y = this.size;
         }
 
         if (this.x + this.size > SCREEN_WIDTH) {
-            this.vx *= -1;
+            this.vx *= -e;
             this.x = SCREEN_WIDTH - this.size;
         }
 
         if (this.y + this.size > SCREEN_HEIGHT) {
-            this.vy *= -1;
+            this.vy *= -e;
             this.y = SCREEN_HEIGHT - this.size;
         }
     }
 }
 
+// Ball class representing the ball in the game
 class Ball {
     constructor(X, Y, COLOR) {
         this.type = "ball";
         this.y = Y;
         this.x = X;
-        this.size = 15;
+        this.size = 18;
         this.mass = 1;
         this.vx = 0;//(Math.random() - 0.5) * 15;
         this.vy = 0;//(Math.random() - 0.5) * 15;
@@ -160,30 +167,33 @@ class Ball {
         this.y += this.vy;
         this.vx *= friction;
         this.vy *= friction;
-
+    }
+    edgeCollision(e = 0.5) {
         if (this.x < this.size) {
-            this.vx *= -1;
+            this.vx *= -e;
             this.x = this.size;
         }
 
         if (this.y < this.size) {
-            this.vy *= -1;
+            this.vy *= -e;
             this.y = this.size;
         }
 
         if (this.x + this.size > SCREEN_WIDTH) {
-            this.vx *= -1;
+            this.vx *= -e;
             this.x = SCREEN_WIDTH - this.size;
         }
 
         if (this.y + this.size > SCREEN_HEIGHT) {
-            this.vy *= -1;
+            this.vy *= -e;
             this.y = SCREEN_HEIGHT - this.size;
         }
     }
 }
 
-const friction = 0.98;
+// Game constants
+const friction = 0.975;
+// Colors and dimensions for the game elements
 const fontColor = [50, 170, 80];
 const lineColor = [230, 255, 230];
 const textColor = [50, 50, 50];
@@ -191,6 +201,7 @@ const lineWidth = 10;
 const goalWidth = SCREEN_WIDTH / 15;
 const goalHeight = SCREEN_HEIGHT / 3;
 
+// Function to reset the game state and create new players and ball
 function ResetGame() {
     const p1 = new Player(goalWidth * 2, SCREEN_HEIGHT / 2, [255, 0, 0], [
         ["q", -1, 0],
@@ -221,12 +232,41 @@ function isInGoal(obj, goal) {
         && obj.y < goal[1] + goal[3];
 }
 
+function resolveCollision(a, b, e = 0.5) {
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
+    const dist = sqrt(dx * dx + dy * dy) || 0.0001;
+    const overlap = a.size + b.size - dist;
+    if (overlap <= 0) return;
+
+    const nx = dx / dist;
+    const ny = dy / dist;
+    const invA = 1 / a.mass;
+    const invB = 1 / b.mass;
+
+    a.x += nx * overlap * invA / (invA + invB);
+    a.y += ny * overlap * invA / (invA + invB);
+    b.x -= nx * overlap * invB / (invA + invB);
+    b.y -= ny * overlap * invB / (invA + invB);
+
+    const rvn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+    if (rvn > 0) return;
+    const j = -(1 + e) * rvn / (invA + invB);
+    a.vx += j * invA * nx;
+    a.vy += j * invA * ny;
+    b.vx -= j * invB * nx;
+    b.vy -= j * invB * ny;
+}
+
+// Game state variables
 let score1 = 0;
 let score2 = 0;
 let running = true;
+let loops = 0;
 let state = "start";
 
 function gameLoop() {
+    // Redraw the font
     fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, fontColor);
     drawCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_HEIGHT / 4, lineColor, 1, lineWidth);
     fillCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_HEIGHT / 40, lineColor);
@@ -240,9 +280,11 @@ function gameLoop() {
     drawRect(0, (SCREEN_HEIGHT - goalHeight * 1.5) / 2, goalWidth * 1.5, goalHeight * 1.5, lineColor, 1, lineWidth);
     drawRect(SCREEN_WIDTH - goalWidth * 1.5, (SCREEN_HEIGHT - goalHeight * 1.5) / 2, goalWidth * 1.5, goalHeight * 1.5, lineColor, 1, lineWidth);
 
+    // Game state management
     if (state === "start") {
-        drawMenu();
+        // drawMenu();
         objects = ResetGame();
+        state = "play";
     }
 
     if (state === "play") {
@@ -252,72 +294,7 @@ function gameLoop() {
             obj.draw();
         }
 
-        const players = objects.filter((obj) => obj.type === "player");
-        const balls = objects.filter((obj) => obj.type === "ball");
-
-        // Collisions joueur-joueur uniquement (physique normale)
-        for (let i = 0; i < players.length; i++) {
-            for (let j = i + 1; j < players.length; j++) {
-                const o1 = players[i];
-                const o2 = players[j];
-                const Size = o1.size + o2.size;
-                const xd = o1.x - o2.x;
-                const yd = o1.y - o2.y;
-                const dist = sqrt(xd * xd + yd * yd);
-
-                if (dist < Size) {
-                    const Mass = o1.mass + o2.mass;
-                    const V1 = sqrt(o1.vx * o1.vx + o1.vy * o1.vy);
-                    const V2 = sqrt(o2.vx * o2.vx + o2.vy * o2.vy);
-                    const V = V1 + V2;
-                    const nx = dist === 0 ? 1 : xd / dist;
-                    const ny = dist === 0 ? 0 : yd / dist;
-                    const overlap = Size - dist;
-
-                    o1.x += nx * overlap * (o2.mass / Mass);
-                    o1.y += ny * overlap * (o2.mass / Mass);
-                    o2.x -= nx * overlap * (o1.mass / Mass);
-                    o2.y -= ny * overlap * (o1.mass / Mass);
-
-                    o1.vx = nx * V * (o2.mass / Mass);
-                    o1.vy = ny * V * (o2.mass / Mass);
-                    o2.vx = -nx * V * (o1.mass / Mass);
-                    o2.vy = -ny * V * (o1.mass / Mass);
-                }
-            }
-        }
-
-        // Balle libre : collision physique avec les joueurs
-        for (const b of balls) {
-            for (const p of players) {
-                const Size = p.size + b.size;
-                const xd = b.x - p.x;
-                const yd = b.y - p.y;
-                const dist = sqrt(xd * xd + yd * yd);
-
-                if (dist < Size) {
-                    const Mass = p.mass + b.mass;
-                    const V1 = sqrt(b.vx * b.vx + b.vy * b.vy);
-                    const V2 = sqrt(p.vx * p.vx + p.vy * p.vy);
-                    const V = V1 + V2;
-                    const nx = dist === 0 ? 1 : xd / dist;
-                    const ny = dist === 0 ? 0 : yd / dist;
-                    const overlap = Size - dist;
-
-                    b.x += nx * overlap * (p.mass / Mass);
-                    b.y += ny * overlap * (p.mass / Mass);
-                    p.x -= nx * overlap * (b.mass / Mass);
-                    p.y -= ny * overlap * (b.mass / Mass);
-
-                    b.vx = nx * V * (p.mass / Mass);
-                    b.vy = ny * V * (p.mass / Mass);
-                    p.vx = -nx * V * (b.mass / Mass);
-                    p.vy = -ny * V * (b.mass / Mass);
-                }
-            }
-        }
-
-        // Déplacement
+        // Move all objects and check for goals
         for (const obj of objects) {
             obj.move();
 
@@ -335,12 +312,35 @@ function gameLoop() {
                 }
             }
         }
+
+        // Collision detection and resolution
+        const collisionPairs = [];
+
+        for (let i = 0; i < objects.length; i++) {
+            objects[i].edgeCollision();
+            for (let j = i + 1; j < objects.length; j++) {
+                collisionPairs.push([objects[i], objects[j]]);
+            }
+        }
+
+        if (loops % 2 !== 0) {
+            collisionPairs.reverse();
+        }
+
+        for (let i = 0; i < 4; i++) {
+            collisionPairs.reverse();
+            for (const [a, b] of collisionPairs) {
+                resolveCollision(a, b);
+            }
+        }
+
     }
+    loops++;
 
     if (running) {
         requestAnimationFrame(gameLoop);
     }
 }
 
-setupMenu();
+// setupMenu();
 gameLoop();

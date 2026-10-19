@@ -91,8 +91,10 @@ class Player {
     draw() {
         const inv_v = 1/(sqrt(this.vx * this.vx + this.vy * this.vy) || 1);
 
-        drawCircle(this.x, this.y, this.size, this.color, 1, 2);
-        ctx.strokeStyle = RGBtoHEX(this.color);
+        fillCircle(this.x, this.y, this.size, this.color);
+        drawCircle(this.x, this.y, this.size, [0,0,0], 1, 2);
+
+        ctx.strokeStyle = RGBtoHEX([0, 0, 0]);
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(this.x, this.y);
@@ -113,7 +115,8 @@ class Player {
             }
         }
     }
-    edgeCollision(e = 0.5) {
+
+    edgeCollision(e = 0.75) {
         if (this.x < this.size) {
             this.vx *= -e;
             this.x = this.size;
@@ -147,7 +150,6 @@ class Ball {
         this.vx = 0;//(Math.random() - 0.5) * 15;
         this.vy = 0;//(Math.random() - 0.5) * 15;
         this.color = COLOR;
-        this.color2 = [0, 0, 0];
     }
 
     reset() {
@@ -159,7 +161,7 @@ class Ball {
 
     draw() {
         fillCircle(this.x, this.y, this.size, this.color);
-        drawCircle(this.x, this.y, this.size, this.color2, 1, 2);
+        drawCircle(this.x, this.y, this.size, [0,0,0], 1, 2);
     }
 
     move() {
@@ -168,7 +170,8 @@ class Ball {
         this.vx *= friction;
         this.vy *= friction;
     }
-    edgeCollision(e = 0.5) {
+
+    edgeCollision(e = 0.75) {
         if (this.x < this.size) {
             this.vx *= -e;
             this.x = this.size;
@@ -218,6 +221,7 @@ function ResetGame() {
 
     const objects = [p1, p2];
     objects.push(new Ball(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, [255, 255, 255]));
+    objects.push(new Ball(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, [255, 255, 255]));
     return objects;
 }
 
@@ -232,7 +236,7 @@ function isInGoal(obj, goal) {
         && obj.y < goal[1] + goal[3];
 }
 
-function resolveCollision(a, b, e = 0.5) {
+function resolveCollision(a, b, e = 0.75) {
     const dx = a.x - b.x;
     const dy = a.y - b.y;
     const dist = sqrt(dx * dx + dy * dy) || 0.0001;
@@ -243,29 +247,23 @@ function resolveCollision(a, b, e = 0.5) {
     const ny = dy / dist;
     const invA = 1 / a.mass;
     const invB = 1 / b.mass;
+    const sum_inv = invA + invB;
 
-    a.x += nx * overlap * invA / (invA + invB);
-    a.y += ny * overlap * invA / (invA + invB);
-    b.x -= nx * overlap * invB / (invA + invB);
-    b.y -= ny * overlap * invB / (invA + invB);
+    a.x += nx * overlap * invA / sum_inv;
+    a.y += ny * overlap * invA / sum_inv;
+    b.x -= nx * overlap * invB / sum_inv;
+    b.y -= ny * overlap * invB / sum_inv;
 
     const rvn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
     if (rvn > 0) return;
-    const j = -(1 + e) * rvn / (invA + invB);
+    const j = -(1 + e) * rvn / sum_inv;
     a.vx += j * invA * nx;
     a.vy += j * invA * ny;
     b.vx -= j * invB * nx;
     b.vy -= j * invB * ny;
 }
 
-// Game state variables
-let score1 = 0;
-let score2 = 0;
-let running = true;
-let loops = 0;
-let state = "start";
-
-function gameLoop() {
+function font() {
     // Redraw the font
     fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, fontColor);
     drawCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_HEIGHT / 4, lineColor, 1, lineWidth);
@@ -279,7 +277,18 @@ function gameLoop() {
     drawRect(goal2[0], goal2[1], goal2[2], goal2[3], [0, 0, 255], 1, lineWidth);
     drawRect(0, (SCREEN_HEIGHT - goalHeight * 1.5) / 2, goalWidth * 1.5, goalHeight * 1.5, lineColor, 1, lineWidth);
     drawRect(SCREEN_WIDTH - goalWidth * 1.5, (SCREEN_HEIGHT - goalHeight * 1.5) / 2, goalWidth * 1.5, goalHeight * 1.5, lineColor, 1, lineWidth);
+}
 
+// Game state variables
+let score1 = 0;
+let score2 = 0;
+let running = true;
+let loops = 0;
+let state = "start";
+
+function gameLoop() {
+    // Redraw
+    font();
     // Game state management
     if (state === "start") {
         // drawMenu();

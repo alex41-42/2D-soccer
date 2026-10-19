@@ -116,7 +116,7 @@ class Player {
         }
     }
 
-    edgeCollision(e = 0.75) {
+    edgeCollision(e = 0.25) {
         if (this.x < this.size) {
             this.vx *= -e;
             this.x = this.size;

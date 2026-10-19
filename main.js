@@ -84,7 +84,7 @@ class Player {
         this.mass = 10;
         this.vx = 0;
         this.vy = 0;
-        this.acc_speed = 1;
+        this.acc_speed = 0.8;
         this.color = COLOR;
         this.key = KEY;
     }

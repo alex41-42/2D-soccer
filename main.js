@@ -84,6 +84,7 @@ class Player {
         this.mass = 10;
         this.vx = 0;
         this.vy = 0;
+        this.acc_speed = 0.8;
         this.color = COLOR;
         this.key = KEY;
     }
@@ -105,15 +106,22 @@ class Player {
     move() {
         this.x += this.vx;
         this.y += this.vy;
-        this.vx *= friction / 1.075;
-        this.vy *= friction / 1.075;
+
+        let acc = [0, 0];
 
         for (let i = 0; i < this.key.length; i++) {
             if (keys[this.key[i][0]]) {
-                this.vx += this.key[i][1];
-                this.vy += this.key[i][2];
+                acc[0] += this.key[i][1];
+                acc[1] += this.key[i][2];
             }
         }
+
+        let inv_norm_acc = 1 / (sqrt(acc[0] * acc[0] + acc[1] * acc[1]) || 1);
+        this.vx += acc[0] * inv_norm_acc * this.acc_speed;
+        this.vy += acc[1] * inv_norm_acc * this.acc_speed;
+
+        this.vx *= friction;
+        this.vy *= friction;
     }
 
     edgeCollision(e = 0.25) {
@@ -220,7 +228,6 @@ function ResetGame() {
     ]);
 
     const objects = [p1, p2];
-    objects.push(new Ball(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, [255, 255, 255]));
     objects.push(new Ball(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, [255, 255, 255]));
     return objects;
 }

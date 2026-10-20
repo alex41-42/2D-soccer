@@ -124,24 +124,28 @@ class Player {
         this.vy *= friction;
     }
 
-    edgeCollision(e = 0.25) {
+    edgeCollision(e = 0.5) {
         if (this.x < this.size) {
             this.vx *= -e;
+            this.vy *= e;
             this.x = this.size;
         }
 
         if (this.y < this.size) {
             this.vy *= -e;
+            this.vx *= e;
             this.y = this.size;
         }
 
         if (this.x + this.size > SCREEN_WIDTH) {
             this.vx *= -e;
+            this.vy *= e;
             this.x = SCREEN_WIDTH - this.size;
         }
 
         if (this.y + this.size > SCREEN_HEIGHT) {
             this.vy *= -e;
+            this.vx *= e;
             this.y = SCREEN_HEIGHT - this.size;
         }
     }
@@ -153,7 +157,7 @@ class Ball {
         this.type = "ball";
         this.y = Y;
         this.x = X;
-        this.size = 18;
+        this.size = 30;
         this.mass = 1;
         this.vx = 0;//(Math.random() - 0.5) * 15;
         this.vy = 0;//(Math.random() - 0.5) * 15;
@@ -179,24 +183,28 @@ class Ball {
         this.vy *= friction;
     }
 
-    edgeCollision(e = 0.75) {
+    edgeCollision(e = 0.9) {
         if (this.x < this.size) {
             this.vx *= -e;
+            this.vy *= e;
             this.x = this.size;
         }
 
         if (this.y < this.size) {
             this.vy *= -e;
+            this.vx *= e;
             this.y = this.size;
         }
 
         if (this.x + this.size > SCREEN_WIDTH) {
             this.vx *= -e;
+            this.vy *= e;
             this.x = SCREEN_WIDTH - this.size;
         }
 
         if (this.y + this.size > SCREEN_HEIGHT) {
             this.vy *= -e;
+            this.vx *= e;
             this.y = SCREEN_HEIGHT - this.size;
         }
     }

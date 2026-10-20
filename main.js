@@ -294,6 +294,13 @@ function font() {
     drawRect(SCREEN_WIDTH - goalWidth * 1.5, (SCREEN_HEIGHT - goalHeight * 1.5) / 2, goalWidth * 1.5, goalHeight * 1.5, lineColor, 1, lineWidth);
 }
 
+function drawMenu() {
+    fillRect(-50, SCREEN_HEIGHT / 3, SCREEN_WIDTH + 100, SCREEN_HEIGHT / 3, [255, 255, 255]);
+    drawRect(-50, SCREEN_HEIGHT / 3, SCREEN_WIDTH + 100, SCREEN_HEIGHT / 3, textColor, 1, lineWidth);
+    drawText(score1 + "/" + score2, SCREEN_WIDTH / 2 - 30, SCREEN_HEIGHT / 2 + 50, 30, textColor);
+    drawText("Goooaaaallll!!!!", SCREEN_WIDTH / 2 - 120, SCREEN_HEIGHT / 2 - 15, 30, textColor);
+}
+
 // Game state variables
 let score1 = 0;
 let score2 = 0;
@@ -304,16 +311,26 @@ let state = "start";
 function gameLoop() {
     // Redraw
     font();
+
     // Game state management
     if (state === "start") {
-        // drawMenu();
+        // Draw Menu
+        drawMenu();
+
+        // Reset the game state and objects
         objects = ResetGame();
-        state = "play";
+
+        // Check for Enter key to start the game
+        if (keys["Enter"]) {
+            state = "play";
+        }
     }
 
     if (state === "play") {
+        // Draw the current score
         drawText(score1 + "/" + score2, SCREEN_WIDTH / 2 - 30, 32, 30, textColor);
 
+        // Draw all objects in the game
         for (const obj of objects) {
             obj.draw();
         }
@@ -338,8 +355,11 @@ function gameLoop() {
         }
 
         // Collision detection and resolution
+        
+        // Edge collision for all objects and prepare collision pairs
         const collisionPairs = [];
 
+        
         for (let i = 0; i < objects.length; i++) {
             objects[i].edgeCollision();
             for (let j = i + 1; j < objects.length; j++) {

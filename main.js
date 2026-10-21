@@ -124,28 +124,24 @@ class Player {
         this.vy *= friction;
     }
 
-    edgeCollision(e = 0.5) {
+    edgeCollision() {
         if (this.x < this.size) {
-            this.vx *= -e;
-            this.vy *= e;
+            this.vx = 0;
             this.x = this.size;
         }
 
         if (this.y < this.size) {
-            this.vy *= -e;
-            this.vx *= e;
+            this.vy = 0;
             this.y = this.size;
         }
 
         if (this.x + this.size > SCREEN_WIDTH) {
-            this.vx *= -e;
-            this.vy *= e;
+            this.vx = 0;
             this.x = SCREEN_WIDTH - this.size;
         }
 
         if (this.y + this.size > SCREEN_HEIGHT) {
-            this.vy *= -e;
-            this.vx *= e;
+            this.vy = 0;
             this.y = SCREEN_HEIGHT - this.size;
         }
     }
@@ -183,7 +179,7 @@ class Ball {
         this.vy *= friction;
     }
 
-    edgeCollision(e = 0.9) {
+    edgeCollision(e = 0.75) {
         if (this.x < this.size) {
             this.vx *= -e;
             this.vy *= e;

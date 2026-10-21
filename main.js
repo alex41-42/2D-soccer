@@ -211,7 +211,7 @@ const friction = 0.975;
 // Colors and dimensions for the game elements
 const fontColor = [50, 170, 80];
 const lineColor = [230, 255, 230];
-const textColor = [50, 50, 50];
+const textColor = [20, 50, 20];
 const lineWidth = 10;
 const goalWidth = SCREEN_WIDTH / 15;
 const goalHeight = SCREEN_HEIGHT / 3;
@@ -295,15 +295,15 @@ function drawScore() {
     fillRect(-50, SCREEN_HEIGHT / 3, SCREEN_WIDTH + 100, SCREEN_HEIGHT / 3, [255, 255, 255]);
     drawRect(-50, SCREEN_HEIGHT / 3, SCREEN_WIDTH + 100, SCREEN_HEIGHT / 3, textColor, 1, lineWidth);
     // Text
-    drawText(`${score1}`, SCREEN_WIDTH * 0.5 - ctx.measureText(`${score1}`).width - 10, SCREEN_HEIGHT * 0.5 + 50, 30, textColor);
-    drawText(`${score2}`, SCREEN_WIDTH * 0.5 + 10, SCREEN_HEIGHT * 0.5 + 50, 30, textColor);
+    drawText(`${score[0]}`, SCREEN_WIDTH * 0.5 - ctx.measureText(`${score[0]}`).width - 10, SCREEN_HEIGHT * 0.5 + 50, 30, textColor);
+    drawText(`${score[1]}`, SCREEN_WIDTH * 0.5 + 10, SCREEN_HEIGHT * 0.5 + 50, 30, textColor);
     drawText("/", SCREEN_WIDTH * 0.5 - 10, SCREEN_HEIGHT * 0.5 + 50, 30, textColor);
-    drawText("Score:", SCREEN_WIDTH * 0.5 - 55, SCREEN_HEIGHT * 0.5 - 15, 30, textColor);
+    drawText("Score:", SCREEN_WIDTH * 0.5 - ctx.measureText("Score:").width * 0.5, SCREEN_HEIGHT * 0.5 - 15, 30, textColor);
 }
 
 // Game state variables
-let score1 = 0;
-let score2 = 0;
+let score = [0, 0];
+
 let running = true;
 let loops = 0;
 let state = "start";
@@ -328,10 +328,10 @@ function gameLoop() {
 
     if (state === "play") {
         // Draw the current score
-        drawText(`${score1}`, SCREEN_WIDTH * 0.5 - ctx.measureText(`${score1}`).width - 10, 32, 30, textColor);
-        drawText(`${score2}`, SCREEN_WIDTH * 0.5 + 10, 32, 30, textColor);
+        drawText(`${score[0]}`, SCREEN_WIDTH * 0.5 - ctx.measureText(`${score[0]}`).width - 10, 32, 30, textColor);
+        drawText(`${score[1]}`, SCREEN_WIDTH * 0.5 + 10, 32, 30, textColor);
         drawText("/", SCREEN_WIDTH * 0.5 - 10, 32, 30, textColor);
-        // drawText(score1 + "/" + score2, SCREEN_WIDTH * 0.5 - 30, 32, 30, textColor);
+        // drawText(score[0] + "/" + score[1], SCREEN_WIDTH * 0.5 - 30, 32, 30, textColor);
 
         // Draw all objects in the game
         for (const obj of objects) {
@@ -344,13 +344,13 @@ function gameLoop() {
 
             if (obj.type === "ball") {
                 if (isInGoal(obj, goal1)) {
-                    score2++;
+                    score[1]++;
                     obj.reset();
                     state = "start";
                 }
 
                 if (isInGoal(obj, goal2)) {
-                    score1++;
+                    score[0]++;
                     obj.reset();
                     state = "start";
                 }

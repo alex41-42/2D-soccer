@@ -161,8 +161,8 @@ class Ball {
     }
 
     reset() {
-        this.x = SCREEN_WIDTH / 2;
-        this.y = SCREEN_HEIGHT / 2;
+        this.x = SCREEN_WIDTH * 0.5;
+        this.y = SCREEN_HEIGHT * 0.5;
         this.vx = 0;//(Math.random() - 0.5) * 15;
         this.vy = 0;//(Math.random() - 0.5) * 15;
     }
@@ -218,13 +218,13 @@ const goalHeight = SCREEN_HEIGHT / 3;
 
 // Function to reset the game state and create new players and ball
 function ResetGame() {
-    const p1 = new Player(goalWidth * 2, SCREEN_HEIGHT / 2, [255, 0, 0], [
+    const p1 = new Player(goalWidth * 2, SCREEN_HEIGHT * 0.5, [255, 0, 0], [
         ["q", -1, 0],
         ["d", 1, 0],
         ["s", 0, 1],
         ["z", 0, -1],
     ]);
-    const p2 = new Player(SCREEN_WIDTH - goalWidth * 2, SCREEN_HEIGHT / 2, [0, 0, 255], [
+    const p2 = new Player(SCREEN_WIDTH - goalWidth * 2, SCREEN_HEIGHT * 0.5, [0, 0, 255], [
         ["ArrowLeft", -1, 0],
         ["ArrowRight", 1, 0],
         ["ArrowDown", 0, 1],
@@ -232,7 +232,7 @@ function ResetGame() {
     ]);
 
     const objects = [p1, p2];
-    objects.push(new Ball(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, [255, 255, 255]));
+    objects.push(new Ball(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.5, [255, 255, 255]));
     return objects;
 }
 
@@ -277,24 +277,28 @@ function resolveCollision(a, b, e = 0.75) {
 function font() {
     // Redraw the font
     fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, fontColor);
-    drawCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_HEIGHT / 4, lineColor, 1, lineWidth);
-    fillCircle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_HEIGHT / 40, lineColor);
-    fillRect((SCREEN_WIDTH - lineWidth) / 2, 0, lineWidth, SCREEN_HEIGHT, lineColor);
+    drawCircle(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.5, SCREEN_HEIGHT / 4, lineColor, 1, lineWidth);
+    fillCircle(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.5, SCREEN_HEIGHT / 40, lineColor);
+    fillRect((SCREEN_WIDTH - lineWidth) * 0.5, 0, lineWidth, SCREEN_HEIGHT, lineColor);
 
-    goal1 = [0, (SCREEN_HEIGHT - goalHeight) / 2, goalWidth, goalHeight];
-    goal2 = [SCREEN_WIDTH - goalWidth, (SCREEN_HEIGHT - goalHeight) / 2, goalWidth, goalHeight];
+    goal1 = [0, (SCREEN_HEIGHT - goalHeight) * 0.5, goalWidth, goalHeight];
+    goal2 = [SCREEN_WIDTH - goalWidth, (SCREEN_HEIGHT - goalHeight) * 0.5, goalWidth, goalHeight];
 
     drawRect(goal1[0], goal1[1], goal1[2], goal1[3], [255, 0, 0], 1, lineWidth);
     drawRect(goal2[0], goal2[1], goal2[2], goal2[3], [0, 0, 255], 1, lineWidth);
-    drawRect(0, (SCREEN_HEIGHT - goalHeight * 1.5) / 2, goalWidth * 1.5, goalHeight * 1.5, lineColor, 1, lineWidth);
-    drawRect(SCREEN_WIDTH - goalWidth * 1.5, (SCREEN_HEIGHT - goalHeight * 1.5) / 2, goalWidth * 1.5, goalHeight * 1.5, lineColor, 1, lineWidth);
+    drawRect(0, (SCREEN_HEIGHT - goalHeight * 1.5) * 0.5, goalWidth * 1.5, goalHeight * 1.5, lineColor, 1, lineWidth);
+    drawRect(SCREEN_WIDTH - goalWidth * 1.5, (SCREEN_HEIGHT - goalHeight * 1.5) * 0.5, goalWidth * 1.5, goalHeight * 1.5, lineColor, 1, lineWidth);
 }
 
-function drawMenu() {
+function drawScore() {
+    // band
     fillRect(-50, SCREEN_HEIGHT / 3, SCREEN_WIDTH + 100, SCREEN_HEIGHT / 3, [255, 255, 255]);
     drawRect(-50, SCREEN_HEIGHT / 3, SCREEN_WIDTH + 100, SCREEN_HEIGHT / 3, textColor, 1, lineWidth);
-    drawText(score1 + "/" + score2, SCREEN_WIDTH / 2 - 30, SCREEN_HEIGHT / 2 + 50, 30, textColor);
-    drawText("Goooaaaallll!!!!", SCREEN_WIDTH / 2 - 120, SCREEN_HEIGHT / 2 - 15, 30, textColor);
+    // Text
+    drawText(`${score1}`, SCREEN_WIDTH * 0.5 - ctx.measureText(`${score1}`).width - 10, SCREEN_HEIGHT * 0.5 + 50, 30, textColor);
+    drawText(`${score2}`, SCREEN_WIDTH * 0.5 + 10, SCREEN_HEIGHT * 0.5 + 50, 30, textColor);
+    drawText("/", SCREEN_WIDTH * 0.5 - 10, SCREEN_HEIGHT * 0.5 + 50, 30, textColor);
+    drawText("Score:", SCREEN_WIDTH * 0.5 - 55, SCREEN_HEIGHT * 0.5 - 15, 30, textColor);
 }
 
 // Game state variables
@@ -311,7 +315,7 @@ function gameLoop() {
     // Game state management
     if (state === "start") {
         // Draw Menu
-        drawMenu();
+        drawScore();
 
         // Reset the game state and objects
         objects = ResetGame();
@@ -324,7 +328,10 @@ function gameLoop() {
 
     if (state === "play") {
         // Draw the current score
-        drawText(score1 + "/" + score2, SCREEN_WIDTH / 2 - 30, 32, 30, textColor);
+        drawText(`${score1}`, SCREEN_WIDTH * 0.5 - ctx.measureText(`${score1}`).width - 10, 32, 30, textColor);
+        drawText(`${score2}`, SCREEN_WIDTH * 0.5 + 10, 32, 30, textColor);
+        drawText("/", SCREEN_WIDTH * 0.5 - 10, 32, 30, textColor);
+        // drawText(score1 + "/" + score2, SCREEN_WIDTH * 0.5 - 30, 32, 30, textColor);
 
         // Draw all objects in the game
         for (const obj of objects) {

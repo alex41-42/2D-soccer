@@ -103,9 +103,9 @@ class Player {
         ctx.stroke();
     }
 
-    move() {
-        this.x += this.vx;
-        this.y += this.vy;
+    move(deltaTime) {
+        this.x += this.vx * deltaTime;
+        this.y += this.vy * deltaTime;
 
         let acc = [0, 0];
 
@@ -117,11 +117,11 @@ class Player {
         }
 
         let inv_norm_acc = 1 / (sqrt(acc[0] * acc[0] + acc[1] * acc[1]) || 1);
-        this.vx += acc[0] * inv_norm_acc * this.acc_speed;
-        this.vy += acc[1] * inv_norm_acc * this.acc_speed;
+        this.vx += acc[0] * inv_norm_acc * this.acc_speed * deltaTime;
+        this.vy += acc[1] * inv_norm_acc * this.acc_speed * deltaTime;
 
-        this.vx *= friction;
-        this.vy *= friction;
+        this.vx *= Math.pow(friction, deltaTime);
+        this.vy *= Math.pow(friction, deltaTime);
     }
 
     edgeCollision() {
@@ -172,11 +172,11 @@ class Ball {
         drawCircle(this.x, this.y, this.size, [0,0,0], 1, 2);
     }
 
-    move() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.vx *= friction;
-        this.vy *= friction;
+    move(deltaTime) {
+        this.x += this.vx * deltaTime;
+        this.y += this.vy * deltaTime;
+        this.vx *= Math.pow(friction, deltaTime);
+        this.vy *= Math.pow(friction, deltaTime);
     }
 
     edgeCollision(e = 0.75) {
@@ -301,92 +301,124 @@ function drawScore() {
     drawText("Score:", SCREEN_WIDTH * 0.5 - ctx.measureText("Score:").width * 0.5, SCREEN_HEIGHT * 0.5 - 15, 30, textColor);
 }
 
+function displayScore(score) {
+    // Display the score on the screen
+    drawText(`${score[0]}`, SCREEN_WIDTH * 0.5 - ctx.measureText(`${score[0]}`).width - 10, 32, 30, textColor);
+    drawText(`${score[1]}`, SCREEN_WIDTH * 0.5 + 10, 32, 30, textColor);
+    drawText("/", SCREEN_WIDTH * 0.5 - 10, 32, 30, textColor);
+}
 // Game state variables
 let score = [0, 0];
 
-let running = true;
 let loops = 0;
 let state = "start";
 
-function gameLoop() {
-    // Redraw
+let lastTime = 0;
+let elapsedTime = 0;
+let deltaTime = 1;
+
+function moveObjects(deltaTime) {
+    for (const obj of objects) {
+        obj.move(deltaTime);
+    }
+}
+
+function checkGoals() {
+    for (const obj of objects) {
+        if (obj.type !== "ball") continue;
+
+        if (isInGoal(obj, goal1)) {
+            score[1]++;
+            obj.reset();
+            state = "start";
+        } else if (isInGoal(obj, goal2)) {
+            score[0]++;
+            obj.reset();
+            state = "start";
+        }
+    }
+}
+
+function getCollisionPairs() {
+    const collisionPairs = [];
+
+    for (let i = 0; i < objects.length; i++) {
+        objects[i].edgeCollision();
+        for (let j = i + 1; j < objects.length; j++) {
+            collisionPairs.push([objects[i], objects[j]]);
+        }
+    }
+
+    return collisionPairs;
+}
+
+function resolveObjectCollisions() {
+    const collisionPairs = getCollisionPairs();
+
+    if (loops % 2 !== 0) {
+        collisionPairs.reverse();
+    }
+
+    for (let i = 0; i < 4; i++) {
+        collisionPairs.reverse();
+        for (const [a, b] of collisionPairs) {
+            resolveCollision(a, b);
+        }
+    }
+}
+
+function updatePhysics() {
+    moveObjects(deltaTime);
+    checkGoals();
+    resolveObjectCollisions();
+}
+
+function updateStartState() {
+    drawScore();
+    objects = ResetGame();
+
+    if (keys["Enter"] && !keys.enterWasPressed) {
+        state = "play";
+        lastTime = 0;
+    }
+
+    keys.enterWasPressed = Boolean(keys["Enter"]);
+}
+
+function drawObjects() {
+    for (const obj of objects) {
+        obj.draw();
+    }
+}
+
+function updateDeltaTime(timestamp) {
+    if (lastTime === 0) {
+        lastTime = timestamp;
+    }
+
+    elapsedTime = (timestamp - lastTime) / 1000;
+    deltaTime = Math.min(elapsedTime * 60, 3);
+    lastTime = timestamp;
+}
+
+function updatePlayState(timestamp) {
+    displayScore(score);
+    drawObjects();
+    updateDeltaTime(timestamp);
+    updatePhysics();
+    loops++;
+}
+
+function gameLoop(timestamp = 0) {
     font();
 
-    // Game state management
     if (state === "start") {
-        // Draw Menu
-        drawScore();
-
-        // Reset the game state and objects
-        objects = ResetGame();
-
-        // Check for Enter key to start the game
-        if (keys["Enter"]) {
-            state = "play";
-        }
+        updateStartState();
+    } else if (state === "play") {
+        updatePlayState(timestamp);
     }
 
-    if (state === "play") {
-        // Draw the current score
-        drawText(`${score[0]}`, SCREEN_WIDTH * 0.5 - ctx.measureText(`${score[0]}`).width - 10, 32, 30, textColor);
-        drawText(`${score[1]}`, SCREEN_WIDTH * 0.5 + 10, 32, 30, textColor);
-        drawText("/", SCREEN_WIDTH * 0.5 - 10, 32, 30, textColor);
-        // drawText(score[0] + "/" + score[1], SCREEN_WIDTH * 0.5 - 30, 32, 30, textColor);
-
-        // Draw all objects in the game
-        for (const obj of objects) {
-            obj.draw();
-        }
-
-        // Move all objects and check for goals
-        for (const obj of objects) {
-            obj.move();
-
-            if (obj.type === "ball") {
-                if (isInGoal(obj, goal1)) {
-                    score[1]++;
-                    obj.reset();
-                    state = "start";
-                }
-
-                if (isInGoal(obj, goal2)) {
-                    score[0]++;
-                    obj.reset();
-                    state = "start";
-                }
-            }
-        }
-
-        // Collision detection and resolution
-        
-        // Edge collision for all objects and prepare collision pairs
-        const collisionPairs = [];
-
-        
-        for (let i = 0; i < objects.length; i++) {
-            objects[i].edgeCollision();
-            for (let j = i + 1; j < objects.length; j++) {
-                collisionPairs.push([objects[i], objects[j]]);
-            }
-        }
-
-        if (loops % 2 !== 0) {
-            collisionPairs.reverse();
-        }
-
-        for (let i = 0; i < 4; i++) {
-            collisionPairs.reverse();
-            for (const [a, b] of collisionPairs) {
-                resolveCollision(a, b);
-            }
-        }
-
-    }
-    loops++;
-
-    if (running) {
-        requestAnimationFrame(gameLoop);
-    }
+    requestAnimationFrame(gameLoop);
 }
 
 // setupMenu();

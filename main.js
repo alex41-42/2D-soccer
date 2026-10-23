@@ -6,6 +6,8 @@ const sqrt = Math.sqrt;
 // Global variables for screen dimensions
 let SCREEN_WIDTH;
 let SCREEN_HEIGHT;
+let goalWidth;
+let goalHeight;
 
 // Cache for color conversions to improve performance
 const colorCache = new Map();
@@ -59,19 +61,83 @@ function resizeCanvas() {
     SCREEN_HEIGHT = window.innerHeight;
     canvas.width = SCREEN_WIDTH;
     canvas.height = SCREEN_HEIGHT;
+    goalWidth = SCREEN_WIDTH / 15;
+    goalHeight = SCREEN_HEIGHT / 3;
 }
 
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas();
 
 const keys = {};
+let score = [0, 0];
+let loops = 0;
+let state = "menu";
+let selectedMenuOption = 0;
+let lastTime = 0;
+let elapsedTime = 0;
+let deltaTime = 1;
 
 document.addEventListener("keydown", (e) => {
     keys[e.key] = true;
+
+    if (e.repeat) return;
+
+    if (state === "menu") {
+        if (e.key === "ArrowUp" || e.key.toLowerCase() === "w") {
+            selectedMenuOption = (selectedMenuOption + 2) % 3;
+            e.preventDefault();
+        } else if (e.key === "ArrowDown" || e.key.toLowerCase() === "s") {
+            selectedMenuOption = (selectedMenuOption + 1) % 3;
+            e.preventDefault();
+        } else if (e.key === "Enter") {
+            activateMenuOption(selectedMenuOption);
+            e.preventDefault();
+        }
+        return;
+    }
+
+    if (state === "howToPlay" && (e.key === "Enter" || e.key === "Escape")) {
+        state = "menu";
+        e.preventDefault();
+    } else if (state === "quit" && e.key === "Escape") {
+        state = "menu";
+        e.preventDefault();
+    }
 });
 
 document.addEventListener("keyup", (e) => {
     keys[e.key] = false;
+});
+
+function activateMenuOption(index) {
+    if (index === 0) {
+        score = [0, 0];
+        loops = 0;
+        state = "start";
+        keys.enterWasPressed = true;
+    } else if (index === 1) {
+        state = "howToPlay";
+    } else if (index === 2) {
+        state = "quit";
+    }
+}
+
+canvas.addEventListener("click", (e) => {
+    const bounds = canvas.getBoundingClientRect();
+    const x = (e.clientX - bounds.left) * (canvas.width / bounds.width);
+    const y = (e.clientY - bounds.top) * (canvas.height / bounds.height);
+
+    if (state === "menu") {
+        const option = getMenuOptionAt(x, y);
+        if (option !== -1) {
+            selectedMenuOption = option;
+            activateMenuOption(option);
+        }
+    } else if (state === "howToPlay") {
+        state = "menu";
+    } else if (state === "quit") {
+        state = "menu";
+    }
 });
 
 // Player class representing a player in the game
@@ -213,8 +279,6 @@ const fontColor = [50, 170, 80];
 const lineColor = [230, 255, 230];
 const textColor = [20, 50, 20];
 const lineWidth = 10;
-const goalWidth = SCREEN_WIDTH / 15;
-const goalHeight = SCREEN_HEIGHT / 3;
 
 // Function to reset the game state and create new players and ball
 function ResetGame() {
@@ -307,15 +371,6 @@ function displayScore(score) {
     drawText(`${score[1]}`, SCREEN_WIDTH * 0.5 + 10, 32, 30, textColor);
     drawText("/", SCREEN_WIDTH * 0.5 - 10, 32, 30, textColor);
 }
-// Game state variables
-let score = [0, 0];
-
-let loops = 0;
-let state = "start";
-
-let lastTime = 0;
-let elapsedTime = 0;
-let deltaTime = 1;
 
 function moveObjects(deltaTime) {
     for (const obj of objects) {
@@ -375,6 +430,8 @@ function updatePhysics() {
 
 function updateStartState() {
     drawScore();
+    const prompt = "Press Enter to Play";
+    drawCenteredText(prompt, SCREEN_HEIGHT * 0.72, 24, textColor);
     objects = ResetGame();
 
     if (keys["Enter"] && !keys.enterWasPressed) {
@@ -412,7 +469,13 @@ function updatePlayState(timestamp) {
 function gameLoop(timestamp = 0) {
     font();
 
-    if (state === "start") {
+    if (state === "menu") {
+        drawMenu(selectedMenuOption);
+    } else if (state === "howToPlay") {
+        drawHowToPlay();
+    } else if (state === "quit") {
+        drawQuitScreen();
+    } else if (state === "start") {
         updateStartState();
     } else if (state === "play") {
         updatePlayState(timestamp);
@@ -421,5 +484,4 @@ function gameLoop(timestamp = 0) {
     requestAnimationFrame(gameLoop);
 }
 
-// setupMenu();
 gameLoop();
